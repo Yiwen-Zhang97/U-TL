@@ -16,8 +16,7 @@ repo/
 ├── tl_helpers.py
 ├── train_pretrain.py
 ├── train_finetune.py
-├── README.md
-└── data/
+└── README.md
 ```
 
 ---
@@ -28,13 +27,12 @@ The U-TL framework consists of two stages:
 
 ## 1. Pretraining Stage
 
-The model is first pretrained to predict satellite-observed land surface temperature (LST) using:
+The model is first pretrained to predict satellite-observed land surface temperature (LST) using primarily:
 
 - Landsat-derived urban surface imagery
 - Meteorological forcing variables
-- Temporal information (month)
 
-Because LST observations are spatially continuous and widely available, this stage enables the network to learn general land–atmosphere interaction patterns.
+This stage enables the network to learn general land–atmosphere interaction patterns.
 
 Implemented in:
 
@@ -46,36 +44,13 @@ train_pretrain.py
 
 ## 2. Fine-Tuning Stage
 
-The pretrained model is subsequently fine-tuned using sparse in-situ urban air temperature (Ta) observations.
-
-Additional architectural modifications include:
-
-- LST residual skip connection
-- Reduced fully connected layers
-- Fine-tuning-specific dropout configuration
+The pretrained model is subsequently fine-tuned using sparse true in-situ urban air temperature (Ta) observations.
 
 Implemented in:
 
 ```text
 train_finetune.py
 ```
-
----
-
-# Main Features
-
-- Transfer learning framework for urban climate applications
-- Shared helper utilities across pretraining and fine-tuning
-- Multi-modal inputs:
-  - Satellite imagery
-  - Reanalysis meteorological forcings
-  - Urban morphology information
-  - Temporal encoding
-- PyTorch DataParallel support
-- Configurable training and fine-tuning pipelines
-- Modularized architecture and preprocessing utilities
-
----
 
 # Input Data Structure
 
@@ -87,12 +62,12 @@ Each sample includes:
 
 | Variable | Description |
 |---|---|
-| Month | Month index |
+| Month | Month indicator |
 | Forcing variables | ERA5-derived meteorological forcings |
 | LST | MODIS land surface temperature |
 | Image channels | Landsat-derived imagery and urban descriptors |
 
-### Image Channels
+### Image Channels + Elevation
 
 ```python
 [
@@ -107,19 +82,19 @@ Each sample includes:
 ]
 ```
 
-### Forcing Variables
+### Forcing Variables + Building Height
 
 ```python
 [
-    "FLDS",
-    "FSDS",
-    "PRECTmms",
-    "PSRF",
-    "QBOT",
-    "TBOT",
-    "WIND_U",
-    "WIND_V",
-    "Building_Height"
+    "FLDS",            # Surface thermal radiation downwards (strd)
+    "FSDS",            # Surface solar radiation downwards (ssrd)
+    "PRECTmms",        # Total precipitation (tp)
+    "PSRF",            # Surface pressure (sp)
+    "QBOT",            # Relative humidity at blending height (r)
+    "TBOT",            # Air temperature at blending height (t)
+    "WIND_U",          # U-component of wind at blending height (u)
+    "WIND_V",          # V-component of wind at blending height (v)
+    "Building_Height"  # Mean urban building height
 ]
 ```
 
@@ -130,9 +105,9 @@ Each sample includes:
 Fine-tuning uses CSV files containing:
 
 - Urban air temperature observations
-- Satellite predictors
-- Meteorological forcings
-- Spatial metadata
+- Landsat-derived urban surface imagery
+- Meteorological forcing variables
+- LST
 
 ---
 
@@ -142,14 +117,13 @@ The model uses a simplified residual convolutional neural network consisting of:
 
 - Shared CNN backbone
 - Meteorological forcing encoder
-- Temporal one-hot embedding
-- Fully connected regression head
+- One-hot month encoder
+- Fully connected linear layers
 
 The fine-tuning model additionally incorporates:
 
 - LST residual skip connection
-- Smaller fully connected layers
-- Fine-tuning dropout adjustments
+- Adjusted fully connected layers
 
 ---
 
